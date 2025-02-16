@@ -42,6 +42,11 @@ print("KNN Prediction for K = 1: ", k1Prediction)
 print("KNN Prediction for K = 3: ", k3Prediction)
 
 # Section 3.7 Exercise 4 - RSS
+def genData(n = 100):
+    X = np.random.uniform(-5, 5, size = n)
+    Y = 3 + 2 * X + np.random.normal(scale = 2, size = n)
+    return X, Y
+
 
 
 # Section 3.7 Exercise 8 - Simple Linear Regression
