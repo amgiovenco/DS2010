@@ -74,6 +74,32 @@ print(model.summary())
 plt.show()
 
 # Section 4.8 Exercise 13 - Logistic Regression & Classification
-
-
 print("\n*Section 4.8 Exercise 13 - Logistic Regression & Classification")
+
+weekly = sm.datasets.get_rdataset("Weekly", "ISLR").data
+X = weekly[['Lag1', 'Lag2', 'Lag3', 'Lag4', 'Lag5', 'Volume']]
+y = weekly['Direction'].apply(lambda x: 1 if x == 'Up' else 0)
+
+XTrain, XTest, yTrain, yTest = train_test_split(X, y, test_size = 0.2, random_state = 42)
+
+logRegression = LogisticRegression().fit(XTrain, yTrain)
+yPrediciton = logRegression.predict(XTest)
+print("Logistic Regression Accuracy: ", accuracy_score(yTest, yPrediciton))
+
+# Confusion Matrix 
+print("Confusion Matrix:\n", confusion_matrix(yTest, yPrediciton))
+
+# LDA
+lda = LinearDiscriminantAnalysis().fit(XTrain, yTrain)
+yPredicitonLDA = lda.predict(XTest)
+print("LDA Accuracy: ", accuracy_score(yTest, yPredicitonLDA))
+
+# QDA
+qda = QuadraticDiscriminantAnalysis().fit(XTrain, yTrain)
+yPredicitonQDA = qda.predict(XTest)
+print("QDA Accuracy: ", accuracy_score(yTest, yPredicitonQDA))
+
+# KNN where K = 1
+knn = KNeighborsClassifier(n_neighbors = 1).fit(XTrain, yTrain)
+yPredicitonKNN = knn.predict(XTest)
+print("KNN Accuracy where K = 1: ", accuracy_score(yTest, yPredicitonKNN))
