@@ -103,3 +103,8 @@ print("QDA Accuracy: ", accuracy_score(yTest, yPredicitonQDA))
 knn = KNeighborsClassifier(n_neighbors = 1).fit(XTrain, yTrain)
 yPredicitonKNN = knn.predict(XTest)
 print("KNN Accuracy where K = 1: ", accuracy_score(yTest, yPredicitonKNN))
+
+# Naive Bayes
+nb = GaussianNB().fit(XTrain, yTrain)
+yPredicitonNB = nb.predict(XTest)
+print("Naive Bayes Accuracy: ", accuracy_score(yTest, yPredicitonNB))
