@@ -38,6 +38,7 @@ k1Prediction = dfKNNSorted.iloc[0]['y']
 # K = 3 Prediction
 k3Prediction = dfKNNSorted.iloc[:3]['y'].mode()[0]
 
+print("*Section 2.4 Exercise 7 - KNN")
 print("KNN Prediction for K = 1: ", k1Prediction)
 print("KNN Prediction for K = 3: ", k3Prediction)
 
@@ -47,9 +48,26 @@ def genData(n = 100):
     Y = 3 + 2 * X + np.random.normal(scale = 2, size = n)
     return X, Y
 
+X, Y = genData()
+XCubic = np.vstack([X, X**2, X**3]).T
 
+linModel = LinearRegression().fit(X.reshape(-1, 1), Y)
+cubeModel = LinearRegression().fit(XCubic, Y)
+
+linRSS = mean_squared_error(Y, linModel.predict(X.reshape(-1, 1))) * len(Y)
+cubeRSS = mean_squared_error(Y, cubeModel.predict(XCubic)) * len(Y)
+
+print("\n*Section 3.7 Exercise 4 - RSS")
+print("RSS for Linear Model: ", linRSS)
+print("RSS for Cubic Model: ", cubeRSS)
 
 # Section 3.7 Exercise 8 - Simple Linear Regression
 
 
+print("\n*Section 3.7 Exercise 8 - Simple Linear Regression")
+
+
 # Section 4.8 Exercise 13 - Logistic Regression & Classification
+
+
+print("\n*Section 4.8 Exercise 13 - Logistic Regression & Classification")
