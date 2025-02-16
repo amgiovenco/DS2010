@@ -62,10 +62,16 @@ print("RSS for Linear Model: ", linRSS)
 print("RSS for Cubic Model: ", cubeRSS)
 
 # Section 3.7 Exercise 8 - Simple Linear Regression
+auto = sm.datasets.get_rdataset("Auto", "ISLR").data
+model = sm.OLS(auto['mpg'], sm.add_constant(auto['horsepower'])).fit()
 
-
+# Regression plot
+plt.figure(figsize = (8, 6))
+sns.regplot(x = auto['horsepower'], y = auto['mpg'], scatter_kws = {'alpha': 0.5})
+plt.title("MPG v. Horsepower")
 print("\n*Section 3.7 Exercise 8 - Simple Linear Regression")
-
+print(model.summary())
+plt.show()
 
 # Section 4.8 Exercise 13 - Logistic Regression & Classification
 
