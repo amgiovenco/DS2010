@@ -1,73 +1,114 @@
 import numpy as np
 import pandas as pd
-from ISLP import load_data
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.pipeline import Pipeline
+import seaborn as sns; sns.set()
+import statsmodels.api as sm
+import patsy as pt
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.metrics import confusion_matrix
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
-import seaborn as sns
-import matplotlib.pyplot as plt
+from sklearn import preprocessing
+from sklearn import metrics
+from sklearn import tree
+from ISLP import load_data
+from IPython.display import display, HTML
 
-# I need to load the weekly dataset from the ISL thing
+print("Section 4.8 Question 13 j:\n")
+# I need to load the weekly dataset from ISL package
 Weekly = load_data('Weekly')
 Weekly.columns
+Weekly['Direction'] = Weekly['Direction'].map({'Up': 1, 'Down': 0})
 
-# preprocessing because I did the whole thing wrong last time. 
-Weekly['DIrection'] = Weekly['Direction'].map({'Up': 1, 'Down': 0})
 
-trainData = Weekly[Weekly['Year'] < 2009]
-testData = Weekly[Weekly['Year'] >= 2009]
+def confusionTable(confusion_mtx):
+    """Renders a nice confusion table with labels"""
+    confusion_df = pd.DataFrame({'y_pred=0': np.append(confusion_mtx[:, 0], confusion_mtx.sum(axis=0)[0]),
+                                 'y_pred=1': np.append(confusion_mtx[:, 1], confusion_mtx.sum(axis=0)[1]),
+                                 'Total': np.append(confusion_mtx.sum(axis=1), ''),
+                                 '': ['y=0', 'y=1', 'Total']}).set_index('')
+    return confusion_df
 
-X_train = trainData.drop(['Direction', 'Year', 'Today'], axis=1)
-y_train = trainData['Direction']
+train_idx = Weekly.index[Weekly['Year'] < 2009]
+WeeklyTrain = Weekly.iloc[train_idx]
+WeeklyTest  = Weekly.drop(train_idx)
 
-X_test = testData.drop(['Direction', 'Year', 'Today'], axis=1)
-y_test = testData['Direction']
+predictors  = ['Lag1', 'Lag2', 'Lag3', 'Lag4', 'Lag5', 'Volume', 'Year']
+X_train = np.array(WeeklyTrain[predictors])
+X_test  = np.array(WeeklyTest[predictors])
+y_train = np.array(WeeklyTrain['Direction'])
+y_test  = np.array(WeeklyTest['Direction'])
 
-print("Section 4.8, Question 13 j.\n")
+# Logistic Regression
+#model_logit = sm.Logit(y_train, X_train).fit() <--- this technique didn't converge
+logit       = LogisticRegression()
+model_logit = logit.fit(X_train, y_train)
+# LDA
+lda         = LinearDiscriminantAnalysis()
+model_lda   = lda.fit(X_train, y_train)
+# QDA
+qda         = QuadraticDiscriminantAnalysis()
+model_qda   = qda.fit(X_train, y_train)
+# KNN_1
+K = 1
+model_knn_1 = KNeighborsClassifier(n_neighbors=K).fit(preprocessing.scale(X_train), y_train)
+# KNN_3
+K = 3
+model_knn_3 = KNeighborsClassifier(n_neighbors=K).fit(preprocessing.scale(X_train), y_train)
+# KNN_10
+K = 10
+model_knn_10 = KNeighborsClassifier(n_neighbors=K).fit(preprocessing.scale(X_train), y_train)
 
-#  log reg model
-poly = PolynomialFeatures(degree = 2, interaction_only = False, include_bias = False)
-X_train_poly = poly.fit_transform(X_train)
-X_test_poly = poly.fit_transform(X_test)
+models = {'logit': model_logit, 
+          'lda': model_lda, 
+          'qda': model_qda,
+          'knn_1': model_knn_1,
+         'knn_3': model_knn_3,
+         'knn_10': model_knn_10}
+scaled = ['knn_1', 'knn_3', 'knn_10']
 
-logRegPoly = LogisticRegression(max_iter=1000)
-logRegPoly.fit(X_train_poly, y_train)
+# Predict
+for k in models:
+    if k in scaled:
+        y_pred = models[k].predict(preprocessing.scale(X_test))
+    else:
+        y_pred = models[k].predict(X_test)
+    # Confusion table
+    display(HTML('<h3>{}</h3>'.format(k)))
+    confusion_mtx = confusion_matrix(y_test, y_pred)
+    display(confusionTable(confusion_mtx))
 
-y_pred_poly = logRegPoly.predict(X_test_poly)
-print("Confusion Matrix - Log Regression w/ Polynomial Features: \n", confusion_matrix(y_test, y_pred_poly))
-print("\nClassification Report: \n", classification_report(y_test, y_pred_poly))
+print("\n\nSection 8.4 Question 8 a & b:\n")
+# Split the data set into a training set and a test set.
+Carseats = load_data('Carseats')
+Carseats.columns
 
-# Standardize the predictors for KNN
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.fit_transform(X_test)
+# Check for missing values
+assert Carseats.isnull().sum().sum() == 0
 
-# hyperparameter tuning
-param_grid = {'n_neighbors': np.arange(1, 21)}
-knn = KNeighborsClassifier()
+# Drop unused index if it exists
+if 'Unnamed: 0' in Carseats.columns:
+    Carseats = Carseats.drop('Unnamed: 0', axis=1)
 
-grid_search = GridSearchCV(knn, param_grid, cv=5)
-grid_search.fit(X_train_scaled, y_train)
+# Create index for training set
+np.random.seed(1)
+train = np.random.random(len(Carseats)) > 0.5
 
-# best k values
-best_k = grid_search.best_params_['n_neighbors']
-print("\nBest K Value:\n", best_k)
+display(Carseats.head())
 
-knn_best = KNeighborsClassifier(n_neighbors=best_k)
-knn_best.fit(X_train_scaled, y_train)
+preds = Carseats.columns.drop(['Sales'])
+f = 'Sales ~ 0 +' + ' + '.join(preds)
+y, X = pt.dmatrices(f, Carseats)
+y = y.flatten()
 
-y_pred_knn = knn_best.predict(X_test_scaled)
-print("\nConfusion Matrix - KNN:\n", confusion_matrix(y_test, y_pred_knn))
-print("\nClassification Report:\n", classification_report(y_test, y_pred_knn))
+# Fit Sklearn's tree regressor
+clf = tree.DecisionTreeRegressor(max_depth=5).fit(X[train], y[train])
 
-# Accuracy comparison
-accuracy_poly = accuracy_score(y_test, y_pred_poly)
-accuracy_knn = accuracy_score(y_test, y_pred_knn)
-print("\nAccuracy - Log Regression w/ Polynomial Features:\n", accuracy_poly)
-print("\nAccuracy - KNN:\n", accuracy_knn)
+# Measure test set MSE
+y_hat = clf.predict(X[~train])
+mse = metrics.mean_squared_error(y[~train], y_hat)
 
-print("\nBoth models have perfect accuracy. This is most likely because the Weekly dataset is only 2009-2010.")
-print("The logistical regression model caught the non-linear relationships between predictors.\n")
+# Get proportion of correct classifications on test set
+print('Test MSE: {}'.format(np.around(mse, 3)))
+print('Test RMSE: {}'.format(np.around(np.sqrt(mse), 3)))
